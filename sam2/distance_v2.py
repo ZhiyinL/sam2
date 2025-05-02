@@ -2,14 +2,14 @@ import os
 import sys
 import numpy as np
 import pandas as pd
+import argparse
 
 sys.path.append("/home/zhiyin/tml-fencing")
 
 from src.distance import Sam2FencerTracker, load_prompt_points
 
-def main():
+def main(bout_dir: str):
     # --- Settings ---
-    bout_dir = "/home/zhiyin/tml-fencing/data_0427/24seoulgpms_l32_hansol_patrice_red/clips"
     sam2_checkpoint = "../checkpoints/sam2.1_hiera_large.pt"
     sam2_config = "./configs/sam2.1/sam2.1_hiera_l.yaml"
 
@@ -20,7 +20,8 @@ def main():
         slope_border_max=0.4,
         min_sep_px=100,
         min_line_length=100,
-        max_line_length=400,
+        max_line_length=450,
+        max_ext_line_length=500,
         min_tilt_deg=10,
         window_thresh=5,
         std_thresh=2.0,
@@ -34,7 +35,6 @@ def main():
     ])
 
     print(f"Found {len(clip_dirs)} clips under {bout_dir}: {clip_dirs}")
-
 
     for clip_dir in clip_dirs:
         clip_idx = int(clip_dir.replace("clip_", "").replace(".mp4", ""))
@@ -62,12 +62,27 @@ def main():
                 video_dir=video_dir,
                 prompt_points=prompt_points,
             )
-            output_csv = os.path.join(video_dir, "fencer_distances.csv")
+            # if output path does not exist, create it
+            output_dir = video_dir.replace('data', 'output_wham')
+            if not os.path.exists(output_dir):
+                os.makedirs(output_dir, exist_ok=True)
+            # save the dataframe to a csv file
+            output_csv = os.path.join(output_dir, "fencer_distances.csv")
             df.to_csv(output_csv, index=False)
             print(f"Saved results to {output_csv}.")
 
         except Exception as e:
-            print(f"🔥 Error processing clip {clip_idx}: {e}")
+            print(f"🔥🔥🔥 Error processing clip {clip_idx}: {e}")
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(
+        description="Batch process fencing clips in a bout directory."
+    )
+    parser.add_argument(
+        '--bout_dir',
+        type=str,
+        default="/home/zhiyin/tml-fencing/data_0427/24seoulgpms_l32_yagodka_saron_red/clips", 
+        help='Path to the bout directory containing clip_*.mp4 and clip_* folders'
+    )
+    args = parser.parse_args()
+    main(args.bout_dir)
