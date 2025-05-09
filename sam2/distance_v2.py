@@ -4,14 +4,23 @@ import numpy as np
 import pandas as pd
 import argparse
 
+from sympy import uppergamma
+
 sys.path.append("/home/zhiyin/tml-fencing")
 
-from src.distance import Sam2FencerTracker, load_prompt_points
+from src.distance import Sam2FencerTracker, load_prompt_points, choose_warning_hsv
 
 def main(bout_dir: str):
     # --- Settings ---
     sam2_checkpoint = "../checkpoints/sam2.1_hiera_large.pt"
     sam2_config = "./configs/sam2.1/sam2.1_hiera_l.yaml"
+
+    color = bout_dir.split("/")[-2].split("_")[-1]
+    try:
+        lower_warning_hsv, upper_warning_hsv = choose_warning_hsv(color)
+    except ValueError as e:
+        print(e)
+        return
 
     tracker_settings = dict(
         sam2_checkpoint=sam2_checkpoint,
@@ -26,6 +35,8 @@ def main(bout_dir: str):
         window_thresh=5,
         std_thresh=2.0,
         verbose=False,
+        lower_warning_hsv=lower_warning_hsv,
+        upper_warning_hsv=upper_warning_hsv,
     )
 
     # --- Process clips ---
